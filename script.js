@@ -7,8 +7,11 @@ navLinks.querySelectorAll('a').forEach(link => {
 });
 
 // Scrollspy: highlight active tab based on section in view
-const sections = ['about-me', 'working-together', 'contact-me'].map(id => document.getElementById(id));
+const sections = ['about-me', 'working-together', 'contact-me']
+  .map(id => document.getElementById(id))
+  .filter(Boolean);
 const navItems = document.querySelectorAll('.nav-links a[data-nav]');
+const navHeight = document.querySelector('.site-nav').offsetHeight;
 
 const setActive = (id) => {
   navItems.forEach(a => {
@@ -16,12 +19,28 @@ const setActive = (id) => {
   });
 };
 
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      setActive(entry.target.id);
-    }
-  });
-}, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+const updateActiveNav = () => {
+  const triggerLine = window.scrollY + navHeight + 1;
+  const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
 
-sections.forEach(sec => sec && observer.observe(sec));
+  let current = null;
+  for (const sec of sections) {
+    if (sec.offsetTop <= triggerLine) current = sec;
+  }
+  if (atBottom) current = sections[sections.length - 1];
+
+  if (current) setActive(current.id);
+};
+
+let ticking = false;
+window.addEventListener('scroll', () => {
+  if (!ticking) {
+    requestAnimationFrame(() => {
+      updateActiveNav();
+      ticking = false;
+    });
+    ticking = true;
+  }
+});
+window.addEventListener('resize', updateActiveNav);
+updateActiveNav();
