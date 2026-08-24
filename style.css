@@ -326,8 +326,25 @@ header.site-nav{
   font-size:0.98rem;
 }
 .media-body p:last-child{margin-bottom:0;}
-.media-quote + .media-quote{
+.quote-row{
+  display:grid;
+  grid-template-columns:1fr 220px;
+  align-items:stretch;
+  gap:20px;
+}
+.quote-row + .quote-row{
   margin-top:28px;
+}
+.quote-row .media-quote{
+  min-width:0;
+}
+.quote-photo{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:var(--paper);
+  border-radius:8px;
+  box-shadow:0 20px 45px -20px rgba(44,38,33,0.35);
 }
 .media-quote{
   border-left:2px solid var(--accent-soft);
@@ -438,6 +455,8 @@ footer{
 /* ---------- RESPONSIVE ---------- */
 @media (max-width:860px){
   .nav-brand{font-size:0.82rem;max-width:200px;line-height:1.25;}
+  .quote-row{grid-template-columns:1fr;}
+  .quote-photo{width:100%;height:200px;}
   .hero-grid{grid-template-columns:1fr;text-align:center;}
   .hero-text p{margin-left:auto;margin-right:auto;}
   .hero-photo-wrap img{width:240px;height:auto;}
