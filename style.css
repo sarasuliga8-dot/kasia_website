@@ -314,6 +314,8 @@ header.site-nav{
   margin-bottom:8px;
 }
 .media-subtext{
+  font-family:'Work Sans',sans-serif;
+  font-style:normal;
   color:var(--ink-soft);
   font-size:0.98rem;
   margin-bottom:16px;
@@ -324,6 +326,9 @@ header.site-nav{
   font-size:0.98rem;
 }
 .media-body p:last-child{margin-bottom:0;}
+.media-quote + .media-quote{
+  margin-top:28px;
+}
 .media-quote{
   border-left:2px solid var(--accent-soft);
   padding:8px 0 8px 22px;
