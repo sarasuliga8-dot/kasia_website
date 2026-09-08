@@ -326,6 +326,11 @@ header.site-nav{
   font-size:0.98rem;
 }
 .media-body p:last-child{margin-bottom:0;}
+.media-body-gap{
+  margin-top:40px;
+  padding-top:24px;
+  border-top:1px solid var(--border);
+}
 .quote-row{
   display:grid;
   grid-template-columns:1fr 220px;
