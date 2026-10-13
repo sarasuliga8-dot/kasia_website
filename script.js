@@ -44,3 +44,14 @@ window.addEventListener('scroll', () => {
 });
 window.addEventListener('resize', updateActiveNav);
 updateActiveNav();
+
+// Expandable quotes ("Read more" / "Read less")
+document.querySelectorAll('.read-more-btn').forEach(btn => {
+  const more = btn.previousElementSibling.querySelector('.quote-more');
+  if (!more) return;
+  btn.addEventListener('click', () => {
+    const expanded = !more.hidden;
+    more.hidden = expanded;
+    btn.textContent = expanded ? 'Read more' : 'Read less';
+  });
+});
