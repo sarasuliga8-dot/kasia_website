@@ -11,12 +11,7 @@ server = ThreadingHTTPServer(
 
 print("Server started at http://" + HOST + ":" + str(PORT))
 
-try:
-    server.serve_forever()
-except KeyboardInterrupt:
-    print("\nServer stopped.")
-finally:
-    server.server_close()
+
 
 from flask import Flask, render_template
 

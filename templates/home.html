@@ -2,24 +2,6 @@
 
 {% block content %}
 
-<section id="home">
-    <!-- Your existing hero section -->
-</section>
-
-<section id="about-me" class="section">
-    <!-- Your existing About Me section -->
-</section>
-
-<section id="working-together" class="section section-alt">
-    <!-- Your existing Working Together section -->
-</section>
-
-<section id="contact-me" class="section">
-    <!-- Your existing Contact Me section -->
-</section>
-<!DOCTYPE html>
-<html lang="en">
-<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kasia Suliga | Digital Strategy &amp; EdTech Leadership</title>
@@ -28,26 +10,18 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Lora:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Work+Sans:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-</head>
-<body>
 
-<header class="site-nav">
-  <div class="nav-inner">
-    <a class="nav-brand" href="#home">Katarzyna (Kasia) Suliga Wasielewska</a>
-    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
-    <ul class="nav-links" id="navLinks">
-      <li><a href="#about-me" data-nav>About Me</a></li>
-      <li><a href="#working-together" data-nav>Working Together</a></li>
-      <li><a href="#contact-me" data-nav>Let's Connect</a></li>
-    </ul>
-  </div>
-</header>
+
+
 
 <!-- ================= HOME / HERO ================= -->
 <section id="home">
   <div class="container hero-grid">
     <div class="hero-photo-wrap">
-      <img src="profile_photo.jpg" alt="Photo of Kasia Suliga">
+      <img
+        src="{{ url_for('static', filename='profile_photo.jpg') }}"
+        alt="Photo of Kasia Suliga"
+     >
     </div>
     <div class="hero-text">
       <span class="eyebrow">Digital Strategy &amp; EdTech Leadership</span>
@@ -177,7 +151,14 @@
             <p>"Thank you so much to the children and staff from St Joseph's who attended our event last week. They really stole the show! I know many guests left with so many interesting takeaways from the young people, and it was so lovely to see them engaging with the older students as well. The young people are a real credit to your school and community."</p>
             <p class="media-subtext">Kate Edwards Head of Education and Support | Molly Rose Foundation</p>
           </div>
-          <img src="top_photo.jpg" alt="Photo from the Open Space Event" class="quote-photo" width="1115" height="617">
+          <img
+            src="{{ url_for('static', filename='top_photo.jpg') }}"
+            alt="Photo from the Open Space Event"
+            class="quote-photo"
+            width="1115"
+            height="617"
+            >
+
         </div>
         <div class="quote-row quote-row--text-only">
           <div class="media-quote">
@@ -210,12 +191,6 @@
   </div>
 </section>
 
-<footer>
-  &copy; 2026 Kasia Suliga. All rights reserved.
-</footer>
-
 <script src="script.js"></script>
 
-</body>
-</html>
 {% endblock %}
