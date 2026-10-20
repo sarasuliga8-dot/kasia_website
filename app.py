@@ -1,12 +1,7 @@
-import json
 import logging
 import os
 import re
 import secrets
-import socket
-import urllib.error
-import urllib.parse
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -17,6 +12,8 @@ from flask_limiter.util import get_remote_address
 from flask_wtf import CSRFProtect
 from flask_wtf.csrf import CSRFError
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+import turnstile
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -34,13 +31,7 @@ if not os.environ.get("SECRET_KEY"):
     app.logger.warning("SECRET_KEY is not set; using a temporary random key.")
 
 app.config["MESSAGES_DIR"] = BASE_DIR / "messages"
-app.config["TURNSTILE_SITE_KEY"] = os.environ.get("TURNSTILE_SITE_KEY", "")
-app.config["TURNSTILE_SECRET_KEY"] = os.environ.get("TURNSTILE_SECRET_KEY", "")
-app.config["TURNSTILE_EXPECTED_HOSTNAMES"] = {
-    host.strip().lower()
-    for host in os.environ.get("TURNSTILE_EXPECTED_HOSTNAMES", "").split(",")
-    if host.strip()
-}
+turnstile.init_app(app)
 
 # Only trust X-Forwarded-For / X-Forwarded-Proto when the app really sits
 # behind a reverse proxy. Set this to the number of proxies in front of the app
@@ -72,18 +63,6 @@ limiter = Limiter(
     strategy="fixed-window",
 )
 
-TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
-TURNSTILE_TIMEOUT_SECONDS = 5
-TURNSTILE_TOKEN_MAX_LENGTH = 2048
-
-# Errors that mean our configuration or the service is at fault, not the visitor.
-TURNSTILE_SERVICE_ERROR_CODES = {
-    "missing-input-secret",
-    "invalid-input-secret",
-    "bad-request",
-    "internal-error",
-}
-
 ALLOWED_FIELDS = {"name", "email", "message", "cf-turnstile-response"}
 MAX_LENGTHS = {"name": 100, "email": 254, "message": 5000}
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
@@ -91,65 +70,6 @@ EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
 CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 logger = logging.getLogger(__name__)
-
-
-class TurnstileRejected(Exception):
-    """Cloudflare says the token is invalid, expired or already used."""
-
-
-class TurnstileUnavailable(Exception):
-    """Verification could not be completed, so the submission must be refused."""
-
-
-def verify_turnstile(token):
-    """Verify a Turnstile token server-side with Cloudflare's Siteverify API.
-
-    Returns None when verification succeeds. Raises TurnstileRejected when
-    Cloudflare rejects the token, and TurnstileUnavailable for any other
-    failure. Callers must treat both exceptions as "do not save".
-    """
-    secret = app.config.get("TURNSTILE_SECRET_KEY")
-    if not secret:
-        raise TurnstileUnavailable("TURNSTILE_SECRET_KEY is not configured")
-
-    body = urllib.parse.urlencode({"secret": secret, "response": token}).encode("utf-8")
-    req = urllib.request.Request(
-        TURNSTILE_VERIFY_URL,
-        data=body,
-        method="POST",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=TURNSTILE_TIMEOUT_SECONDS) as response:
-            if response.status != 200:
-                raise TurnstileUnavailable(f"Siteverify returned HTTP {response.status}")
-            payload = json.loads(response.read(65536).decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        raise TurnstileUnavailable(f"Siteverify returned HTTP {exc.code}") from None
-    except (urllib.error.URLError, socket.timeout, TimeoutError, OSError) as exc:
-        raise TurnstileUnavailable(f"Siteverify request failed: {type(exc).__name__}") from None
-    except ValueError:
-        # Covers malformed JSON and invalid UTF-8.
-        raise TurnstileUnavailable("Siteverify returned a malformed response") from None
-
-    if not isinstance(payload, dict) or not isinstance(payload.get("success"), bool):
-        raise TurnstileUnavailable("Siteverify response is missing a valid success field")
-
-    error_codes = payload.get("error-codes") or []
-    if not isinstance(error_codes, list):
-        error_codes = []
-
-    if payload["success"] is not True:
-        if TURNSTILE_SERVICE_ERROR_CODES.intersection(error_codes):
-            raise TurnstileUnavailable(f"Siteverify error: {', '.join(map(str, error_codes))}")
-        raise TurnstileRejected(f"Token rejected: {', '.join(map(str, error_codes)) or 'no codes'}")
-
-    expected_hostnames = app.config.get("TURNSTILE_EXPECTED_HOSTNAMES") or set()
-    if expected_hostnames:
-        hostname = str(payload.get("hostname", "")).lower()
-        if hostname not in expected_hostnames:
-            raise TurnstileRejected("Token was issued for an unexpected hostname")
 
 
 def validate_contact_form(data):
@@ -188,12 +108,6 @@ def validate_contact_form(data):
     return cleaned, errors
 
 
-@app.context_processor
-def inject_turnstile_site_key():
-    # The site key is public and is rendered into the page. The secret never is.
-    return {"turnstile_site_key": app.config.get("TURNSTILE_SITE_KEY", "")}
-
-
 @app.route("/")
 def home():
     return render_template("home.html")
@@ -226,7 +140,7 @@ def handle_contact_submission():
             retry_turnstile=True,
         ), 400
     token = token.strip()
-    if len(token) > TURNSTILE_TOKEN_MAX_LENGTH:
+    if len(token) > turnstile.TOKEN_MAX_LENGTH:
         return jsonify(
             error="The security check could not be verified. Please try again.",
             retry_turnstile=True,
@@ -239,14 +153,14 @@ def handle_contact_submission():
     # Validation happens before verification so a typo doesn't use up the token.
     # Nothing is saved until the token is verified below.
     try:
-        verify_turnstile(token)
-    except TurnstileRejected as exc:
+        turnstile.verify(token)
+    except turnstile.TurnstileRejected as exc:
         logger.info("Turnstile rejected a contact submission: %s", exc)
         return jsonify(
             error="The security check could not be verified. Please complete it again.",
             retry_turnstile=True,
         ), 400
-    except TurnstileUnavailable as exc:
+    except turnstile.TurnstileUnavailable as exc:
         logger.error("Turnstile verification unavailable: %s", exc)
         return jsonify(
             error="Verification is temporarily unavailable. Please try again shortly."
@@ -287,6 +201,11 @@ def handle_rate_limit(error):
 @app.route("/about")
 def about():
     return render_template("about.html")
+
+
+@app.route("/working-together")
+def working_together():
+    return render_template("working-together.html")
 
 
 if __name__ == "__main__":

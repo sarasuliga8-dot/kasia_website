@@ -55,8 +55,8 @@
             </button>
 
             <ul class="nav-links" id="navLinks">
-                <li><a href="{{ url_for('home') }}#about-me" data-nav>About Me</a></li>
-                <li><a href="{{ url_for('home') }}#working-together" data-nav>Working Together</a></li>
+                <li><a href="{{ url_for('about') }}"{% if request.endpoint == 'about' %} class="active"{% endif %}>About Me</a></li>
+                <li><a href="{{ url_for('working_together') }}"{% if request.endpoint == 'working_together' %} class="active"{% endif %}>Working Together</a></li>
                 <li><a href="{{ url_for('contact') }}"{% if request.endpoint == 'contact' %} class="active"{% endif %}>Let's Connect</a></li>
             </ul>
 

@@ -79,7 +79,7 @@ def saved_files(messages_dir):
 
 
 def siteverify_returns(payload, status=200):
-    return mock.patch("app.urllib.request.urlopen", return_value=FakeResponse(payload, status))
+    return mock.patch("turnstile.urllib.request.urlopen", return_value=FakeResponse(payload, status))
 
 
 # 1. Valid submission with successful Turnstile verification
@@ -138,7 +138,7 @@ def test_invalid_or_expired_token_is_rejected(client, messages_dir, code):
     ],
 )
 def test_unavailable_siteverify_fails_closed(client, messages_dir, side_effect):
-    with mock.patch("app.urllib.request.urlopen", side_effect=side_effect):
+    with mock.patch("turnstile.urllib.request.urlopen", side_effect=side_effect):
         response = submit(client, VALID_BODY)
 
     assert response.status_code == 503
