@@ -428,13 +428,13 @@ header.site-nav{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:48px;
-  height:48px;
+  width:59px;
+  height:59px;
   border-radius:8px;
   color:var(--accent);
   transition:transform 0.2s ease, opacity 0.2s ease;
 }
-.linkedin-link svg{width:40px;height:40px;}
+.linkedin-link svg{width:49.2px;height:49.2px;}
 .linkedin-link:hover{transform:translateY(-2px);opacity:0.85;}
 .linkedin-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 
