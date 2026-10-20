@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- ================= CONTACT ME ================= -->
+<section id="contact-me" class="section contact-page">
+  <div class="container">
+    <div class="contact-panel">
+      <h2>Let's Connect</h2>
+      <p class="section-intro">If you would like to connect, share ideas or discuss the role of technology in education and the importance of human connection, I'd be delighted to hear from you.</p>
+      <p class="section-intro">Connect with me on LinkedIn to start the conversation, or send me a message below.</p>
+      <ul class="contact-list">
+        <li>
+          <a href="https://www.linkedin.com/in/katarzyna-kasia-suliga-wasielewska-44025450/" target="_blank" rel="noopener noreferrer">
+            <span class="contact-icon">in</span>
+            My LinkedIn: linkedin.com/in/katarzyna-kasia-suliga-wasielewska-44025450
+          </a>
+        </li>
+      </ul>
+
+      <form class="contact-form" id="contactForm" novalidate>
+        <div class="form-field">
+          <label for="contactName">Name</label>
+          <input type="text" id="contactName" name="name" autocomplete="name" required>
+        </div>
+
+        <div class="form-field">
+          <label for="contactEmail">Email</label>
+          <input type="email" id="contactEmail" name="email" autocomplete="email" required aria-describedby="emailError">
+          <p class="form-error" id="emailError" hidden>Please enter a valid email address, e.g. name@example.com</p>
+        </div>
+
+        <div class="form-field">
+          <label for="contactMessage">Message</label>
+          <textarea id="contactMessage" name="message" rows="6" required></textarea>
+        </div>
+
+        {% if turnstile_site_key %}
+        <div class="turnstile-wrap" id="turnstileWidget"></div>
+        {% endif %}
+
+        <button type="submit" class="form-submit" id="contactSubmit" disabled>Send</button>
+      </form>
+
+      <p class="form-error" id="contactError" role="alert" hidden>Sorry, your message could not be sent. Please try again.</p>
+
+      <p class="form-thanks" id="contactThanks" role="status" hidden>Thank you for your message, I will get back to you as soon as I can</p>
+    </div>
+  </div>
+</section>
+
+{% if turnstile_site_key %}
+<!-- Cloudflare Turnstile: explicit rendering so the widget can be reset after a failed attempt -->
+<script>
+  window.onTurnstileLoad = function () {
+    window.turnstileWidgetId = turnstile.render('#turnstileWidget', {
+      sitekey: {{ turnstile_site_key | tojson }},
+      size: 'flexible'
+    });
+  };
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&amp;render=explicit" async defer></script>
+{% endif %}
+
+{% endblock %}

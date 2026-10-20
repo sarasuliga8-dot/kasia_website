@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>Kasia Suliga | Digital Strategy &amp; EdTech Leadership</title>
 
@@ -38,7 +39,7 @@
     <header class="site-nav">
         <div class="nav-inner">
 
-            <a class="nav-brand" href="#home">
+            <a class="nav-brand" href="{{ url_for('home') }}">
                 Katarzyna (Kasia) Suliga Wasielewska
             </a>
 
@@ -54,9 +55,9 @@
             </button>
 
             <ul class="nav-links" id="navLinks">
-                <li><a href="#about-me" data-nav>About Me</a></li>
-                <li><a href="#working-together" data-nav>Working Together</a></li>
-                <li><a href="#contact-me" data-nav>Let's Connect</a></li>
+                <li><a href="{{ url_for('home') }}#about-me" data-nav>About Me</a></li>
+                <li><a href="{{ url_for('home') }}#working-together" data-nav>Working Together</a></li>
+                <li><a href="{{ url_for('contact') }}"{% if request.endpoint == 'contact' %} class="active"{% endif %}>Let's Connect</a></li>
             </ul>
 
         </div>

@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Virtual environment
+.venv/
+venv/
+
+# Secrets and local configuration (never commit real keys)
+.env
+.env.*
+!.env.example
+
+# Visitor contact-form submissions contain personal data
+messages/
