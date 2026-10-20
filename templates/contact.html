@@ -55,7 +55,10 @@
   window.onTurnstileLoad = function () {
     window.turnstileWidgetId = turnstile.render('#turnstileWidget', {
       sitekey: {{ turnstile_site_key | tojson }},
-      size: 'flexible'
+      size: 'flexible',
+      callback: function () { window.dispatchEvent(new Event('turnstile-state-changed')); },
+      'expired-callback': function () { window.dispatchEvent(new Event('turnstile-state-changed')); },
+      'error-callback': function () { window.dispatchEvent(new Event('turnstile-state-changed')); }
     });
   };
 </script>

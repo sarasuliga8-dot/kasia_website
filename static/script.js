@@ -1,19 +1,93 @@
-// Mobile nav toggle
+
+ // Mobile navigation toggle
 const navToggle = document.getElementById('navToggle');
 const navLinks = document.getElementById('navLinks');
-navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
-navLinks.querySelectorAll('a').forEach(link => {
-  link.addEventListener('click', () => navLinks.classList.remove('open'));
+
+navToggle.addEventListener('click', () => {
+  const isOpen = navLinks.classList.toggle('open');
+  navToggle.setAttribute('aria-expanded', String(isOpen));
 });
 
+navLinks.querySelectorAll('a').forEach(link => {
+  link.addEventListener('click', () => {
+    navLinks.classList.remove('open');
+    navToggle.setAttribute('aria-expanded', 'false');
+  });
+});
+
+// Scrollspy: highlight active tab based on section in view
+const sections = ['about-me', 'working-together', 'contact-me']
+  .map(id => document.getElementById(id))
+  .filter(Boolean);
+
+const navItems = document.querySelectorAll('.nav-links a[data-nav]');
+const nav = document.querySelector('.site-nav');
+
+const getNavHeight = () => nav ? nav.offsetHeight : 0;
+
+const setActive = (id) => {
+  navItems.forEach(link => {
+    link.classList.toggle(
+      'active',
+      link.getAttribute('href') === '#' + id
+    );
+  });
+};
+
+const updateActiveNav = () => {
+  if (sections.length === 0) return;
+
+  const triggerLine = window.scrollY + getNavHeight() + 1;
+  const atBottom =
+    window.innerHeight + window.scrollY >=
+    document.documentElement.scrollHeight - 2;
+
+  let current = null;
+
+  for (const section of sections) {
+    if (section.offsetTop <= triggerLine) {
+      current = section;
+    }
+  }
+
+  if (atBottom) {
+    current = sections[sections.length - 1];
+  }
+
+  if (current) {
+    setActive(current.id);
+  }
+};
+
+let ticking = false;
+
+window.addEventListener('scroll', () => {
+  if (!ticking) {
+    window.requestAnimationFrame(() => {
+      updateActiveNav();
+      ticking = false;
+    });
+
+    ticking = true;
+  }
+});
+
+window.addEventListener('resize', updateActiveNav);
+
+updateActiveNav();
+
 // Expandable quotes ("Read more" / "Read less")
-document.querySelectorAll('.read-more-btn').forEach(btn => {
-  const more = btn.previousElementSibling.querySelector('.quote-more');
+document.querySelectorAll('.read-more-btn').forEach(button => {
+  const quote = button.previousElementSibling;
+  const more = quote?.querySelector('.quote-more');
+
   if (!more) return;
-  btn.addEventListener('click', () => {
+
+  button.addEventListener('click', () => {
     const expanded = !more.hidden;
+
     more.hidden = expanded;
-    btn.textContent = expanded ? 'Read more' : 'Read less';
+    button.textContent = expanded ? 'Read more' : 'Read less';
   });
 });
 
@@ -30,10 +104,15 @@ if (contactForm) {
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const isEmailValid = () => emailPattern.test(emailInput.value.trim());
 
+  // When the Turnstile widget is on the page, the visitor must complete it first
+  const turnstileWidget = document.getElementById('turnstileWidget');
+  const isTurnstileComplete = () => !turnstileWidget || getTurnstileToken() !== '';
+
   const isFormValid = () =>
     nameInput.value.trim() !== '' &&
     messageInput.value.trim() !== '' &&
-    isEmailValid();
+    isEmailValid() &&
+    isTurnstileComplete();
 
   const showEmailError = () => {
     const invalid = emailInput.value.trim() !== '' && !isEmailValid();
@@ -42,6 +121,9 @@ if (contactForm) {
   };
 
   const updateSubmit = () => { submitBtn.disabled = !isFormValid(); };
+
+  // The Turnstile callbacks in contact.html fire this when the check is completed or expires
+  window.addEventListener('turnstile-state-changed', updateSubmit);
 
   [nameInput, emailInput, messageInput].forEach(input => {
     input.addEventListener('input', updateSubmit);
@@ -106,8 +188,9 @@ if (contactForm) {
       contactError.textContent = err.serverMessage
         || 'Sorry, your message could not be sent. Please try again.';
       contactError.hidden = false;
-      submitBtn.disabled = false;
-      if (err.retryTurnstile) resetTurnstile();
+      // Tokens are single-use, so the visitor must complete the check again
+      resetTurnstile();
+      updateSubmit();
     }
   });
 }
