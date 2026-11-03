@@ -39,7 +39,7 @@
     <header class="site-nav">
         <div class="nav-inner">
 
-            <a class="nav-brand" href="{{ url_for('home') }}">
+            <a class="nav-brand{% if request.endpoint == 'home' %} active{% endif %}" href="{{ url_for('home') }}">
                 Katarzyna (Kasia) Suliga Wasielewska
             </a>
 

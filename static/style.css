@@ -63,6 +63,13 @@ header.site-nav{
   letter-spacing:0.02em;
   text-decoration:none;
   cursor:pointer;
+  display:inline-block;
+  padding-bottom:6px;
+  border-bottom:1px solid transparent;
+  transition:border-color 0.2s ease;
+}
+.nav-brand.active{
+  border-bottom-color:var(--accent);
 }
 .nav-links{
   display:flex;

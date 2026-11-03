@@ -58,6 +58,8 @@ def client(messages_dir):
         TURNSTILE_SECRET_KEY=TEST_SECRET,
         TURNSTILE_EXPECTED_HOSTNAMES=set(),
         MESSAGES_DIR=messages_dir,
+        # Never send real email from the tests, even if SMTP is set in .env
+        SMTP_HOST="",
     )
     app_module.limiter.reset()
     with flask_app.test_client() as test_client:
@@ -383,3 +385,58 @@ def test_contact_page_without_site_key_omits_widget_and_refuses_tokenless_submis
     assert response.status_code == 400
     assert urlopen.call_count == 0
     assert saved_files(messages_dir) == []
+
+
+# 11. Email notification through SMTP
+SMTP_SETTINGS = {
+    "SMTP_HOST": "smtp.example.test",
+    "SMTP_PORT": 587,
+    "SMTP_USERNAME": "sender-user",
+    "SMTP_PASSWORD": "sender-pass-not-real",
+    "SMTP_USE_SSL": False,
+    "CONTACT_EMAIL_TO": "owner@example.test",
+    "CONTACT_EMAIL_FROM": "site@example.test",
+}
+
+
+@pytest.fixture
+def smtp_configured(monkeypatch):
+    for key, value in SMTP_SETTINGS.items():
+        monkeypatch.setitem(app_module.app.config, key, value)
+
+
+def test_submission_sends_email_to_owner_with_visitor_as_reply_to(client, messages_dir, smtp_configured):
+    with siteverify_returns(success_payload()), mock.patch("mailer.smtplib.SMTP") as smtp_class:
+        response = submit(client, VALID_BODY)
+
+    assert response.status_code == 200
+    server = smtp_class.return_value
+    smtp_class.assert_called_once_with("smtp.example.test", 587, timeout=10)
+    server.starttls.assert_called_once()
+    server.login.assert_called_once_with("sender-user", "sender-pass-not-real")
+    sent = server.send_message.call_args.args[0]
+    assert sent["To"] == "owner@example.test"
+    assert sent["From"] == "site@example.test"
+    assert sent["Reply-To"] == "Test Visitor <visitor@example.com>"
+    assert "Hello there, this is a test message." in sent.get_content()
+    assert len(saved_files(messages_dir)) == 1
+
+
+def test_smtp_failure_still_saves_message_and_returns_success(client, messages_dir, smtp_configured):
+    with siteverify_returns(success_payload()), mock.patch(
+        "mailer.smtplib.SMTP", side_effect=socket.timeout("timed out")
+    ):
+        response = submit(client, VALID_BODY)
+
+    assert response.status_code == 200
+    assert response.get_json() == {"ok": True}
+    assert len(saved_files(messages_dir)) == 1
+
+
+def test_no_email_is_sent_when_smtp_is_not_configured(client, messages_dir):
+    with siteverify_returns(success_payload()), mock.patch("mailer.smtplib.SMTP") as smtp_class:
+        response = submit(client, VALID_BODY)
+
+    assert response.status_code == 200
+    assert smtp_class.call_count == 0
+    assert len(saved_files(messages_dir)) == 1
