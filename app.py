@@ -13,6 +13,7 @@ from flask_wtf import CSRFProtect
 from flask_wtf.csrf import CSRFError
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+import mailer
 import turnstile
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -32,6 +33,7 @@ if not os.environ.get("SECRET_KEY"):
 
 app.config["MESSAGES_DIR"] = BASE_DIR / "messages"
 turnstile.init_app(app)
+mailer.init_app(app)
 
 # Only trust X-Forwarded-For / X-Forwarded-Proto when the app really sits
 # behind a reverse proxy. Set this to the number of proxies in front of the app
@@ -177,6 +179,12 @@ def handle_contact_submission():
             f"Email: {cleaned['email']}\n\n"
             f"Message:\n{cleaned['message']}\n"
         )
+
+    # The message is already saved above, so a mail failure does not lose it.
+    try:
+        mailer.send_contact_email(cleaned["name"], cleaned["email"], cleaned["message"], now)
+    except mailer.MailUnavailable as exc:
+        logger.error("Contact email was not sent (message saved): %s", exc)
     return jsonify(ok=True)
 
 
